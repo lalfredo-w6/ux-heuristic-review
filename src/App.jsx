@@ -1,32 +1,13 @@
 import { useState, useRef } from 'react'
+import { NN_HEURISTICS } from './heuristics'
 
 const PURPLE = '#5B21B6'
 
-const SEVERITY_COLORS = {
-  Critical: { bg: '#FCEBEB', text: '#A32D2D', border: '#E24B4A' },
-  Major:    { bg: '#FAEEDA', text: '#854F0B', border: '#EF9F27' },
-  Minor:    { bg: '#E6F1FB', text: '#185FA5', border: '#378ADD' },
-}
-
-const BAR_COLORS = { 1: '#E24B4A', 2: '#EF9F27', 3: '#EF9F27', 4: '#639922', 5: '#1D9E75' }
-
-const STATUS_STYLES = {
-  'Pass':               { bg: '#EAF3DE', text: '#3B6D11', circleBg: '#EAF3DE', circleText: '#3B6D11' },
-  'Pass with Revision': { bg: '#FAEEDA', text: '#854F0B', circleBg: '#FAEEDA', circleText: '#854F0B' },
-  'Needs Rework':       { bg: '#FCEBEB', text: '#A32D2D', circleBg: '#FCEBEB', circleText: '#A32D2D' },
-}
-
-const DS_STATUS = {
-  pass: { bg: '#EAF3DE', text: '#3B6D11', label: 'Pass',    icon: 'ti-check' },
-  warn: { bg: '#FAEEDA', text: '#854F0B', label: 'Warning', icon: 'ti-alert-triangle' },
-  fail: { bg: '#FCEBEB', text: '#A32D2D', label: 'Fail',    icon: 'ti-x' },
-}
-
 const STEPS = [
-  'Running heuristic evaluation',
-  'Checking design system compliance',
-  'Evaluating accessibility',
-  'Generating recommendations',
+  'Analysing interface against 10 heuristics',
+  'Identifying usability issues',
+  'Writing recommendations',
+  'Compiling evaluation report',
 ]
 
 export default function App() {
@@ -156,7 +137,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
@@ -167,7 +148,7 @@ export default function App() {
             <h1 style={{ fontSize: 20, fontWeight: 600, color: '#111827' }}>UX Heuristic Review</h1>
           </div>
           <p style={{ fontSize: 14, color: '#6B7280', paddingLeft: 46 }}>
-            AI-powered prototype review · Mobitech Design System
+            Heuristic Evaluation · Nielsen Norman Group
           </p>
         </div>
 
@@ -329,119 +310,93 @@ export default function App() {
               </div>
             ) : report && (
               <>
-                {/* Score hero */}
-                <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #E5E7EB', padding: '1.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: STATUS_STYLES[report.status]?.circleBg || '#F3F4F6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 24, fontWeight: 600, color: STATUS_STYLES[report.status]?.circleText || '#111827', lineHeight: 1 }}>{report.score}</span>
-                    <span style={{ fontSize: 11, color: '#9CA3AF' }}>/100</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111827', marginBottom: 4 }}>{report.status}</h2>
-                    <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>{report.summary}</p>
-                    <span style={{ display: 'inline-block', marginTop: 8, fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 6, background: STATUS_STYLES[report.status]?.bg, color: STATUS_STYLES[report.status]?.text }}>
-                      {report.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Heuristics grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, marginBottom: '1rem' }}>
-                  {(report.heuristics || []).map(h => (
-                    <div key={h.name} style={{ background: '#fff', borderRadius: 10, border: '0.5px solid #E5E7EB', padding: '10px 12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, color: '#6B7280' }}>{h.name}</span>
-                        <span style={{ fontSize: 13, fontWeight: 500 }}>{h.score}/5</span>
+                {/* Workbook header */}
+                <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #E5E7EB', padding: '1.5rem', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9CA3AF', marginBottom: 4 }}>Heuristic Evaluation Workbook</p>
+                  <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>Nielsen Norman Group</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem 1.5rem', marginBottom: '1rem' }}>
+                    {[
+                      ['Evaluator', report.evaluator || 'AI Heuristic Evaluator'],
+                      ['Date', report.date || new Date().toISOString().slice(0, 10)],
+                      ['Product', report.product || '—'],
+                      ['Task', report.task || '—'],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 2 }}>{label}</p>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>{value}</p>
                       </div>
-                      <div style={{ height: 4, background: '#F3F4F6', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-                        <div style={{ height: 4, width: `${(h.score / 5) * 100}%`, background: BAR_COLORS[h.score] || '#378ADD', borderRadius: 2, transition: 'width 0.5s' }} />
-                      </div>
-                      <p style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.4 }}>{h.note}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {report.summary && (
+                    <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6, borderTop: '0.5px solid #F3F4F6', paddingTop: '0.75rem' }}>{report.summary}</p>
+                  )}
                 </div>
 
-                {/* Design system compliance */}
-                <div style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #E5E7EB', padding: '1.25rem', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <i className="ti ti-layout-grid" style={{ fontSize: 15, color: PURPLE }} aria-hidden="true" />
-                    Design system compliance
-                  </h3>
-                  {(report.designSystem || []).map((d, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < report.designSystem.length - 1 ? '0.5px solid #F3F4F6' : 'none' }}>
-                      <span style={{ fontSize: 13, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <i className={`ti ${DS_STATUS[d.status]?.icon}`} style={{ fontSize: 14, color: DS_STATUS[d.status]?.text }} aria-hidden="true" />
-                        {d.label}
-                      </span>
-                      <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: DS_STATUS[d.status]?.bg, color: DS_STATUS[d.status]?.text }}>
-                        {DS_STATUS[d.status]?.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                {/* 10 heuristics — workbook format */}
+                {(report.heuristics || []).map(h => {
+                  const meta = NN_HEURISTICS.find(n => n.number === h.number) || NN_HEURISTICS.find(n => n.name === h.name)
+                  const issues = (h.issues || []).filter(Boolean)
+                  const recommendations = (h.recommendations || []).filter(Boolean)
 
-                {/* Findings */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <i className="ti ti-alert-triangle" style={{ fontSize: 15, color: PURPLE }} aria-hidden="true" />
-                    Findings
-                  </h3>
-                  {(report.findings || []).map((f, i) => {
-                    const s = SEVERITY_COLORS[f.severity] || SEVERITY_COLORS.Minor
-                    return (
-                      <div key={i} style={{ background: '#fff', borderRadius: 10, border: `0.5px solid #E5E7EB`, borderLeft: `3px solid ${s.border}`, padding: '12px 14px', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: '#111827', flex: 1 }}>{f.title}</span>
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: s.bg, color: s.text, flexShrink: 0 }}>{f.severity}</span>
+                  return (
+                    <div key={h.number || h.name} style={{ background: '#fff', borderRadius: 16, border: '0.5px solid #E5E7EB', padding: '1.25rem', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: '0.75rem' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#EEEDFE', color: PURPLE, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {h.number || meta?.number}
                         </div>
-                        <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6, marginBottom: 8 }}><strong style={{ color: '#374151', fontWeight: 500 }}>Impact: </strong>{f.impact}</p>
-                        <div style={{ background: '#F9FAFB', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#6B7280', lineHeight: 1.5 }}>
-                          <i className="ti ti-bulb" style={{ color: PURPLE, marginRight: 4, fontSize: 13, verticalAlign: -1 }} aria-hidden="true" />
-                          {f.recommendation}
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 6 }}>{h.name || meta?.name}</h3>
+                          {meta?.definition && (
+                            <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6, marginBottom: 8 }}>{meta.definition}</p>
+                          )}
+                          {meta?.questions && (
+                            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: 12, color: '#9CA3AF', lineHeight: 1.7 }}>
+                              {meta.questions.map((q, i) => <li key={i}>{q}</li>)}
+                            </ul>
+                          )}
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
 
-                {/* Quick wins */}
-                <div style={{ background: '#F5F3FF', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <i className="ti ti-bolt" style={{ fontSize: 15, color: PURPLE }} aria-hidden="true" />
-                    Quick wins
-                  </h3>
-                  {(report.quickWins || []).map((q, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-                      <i className="ti ti-circle-check" style={{ color: PURPLE, fontSize: 15, marginTop: 1, flexShrink: 0 }} aria-hidden="true" />
-                      {q}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, borderTop: '0.5px solid #F3F4F6', paddingTop: '0.75rem' }}>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#9CA3AF', marginBottom: 8 }}>Issues</p>
+                          {issues.length > 0 ? issues.map((issue, i) => (
+                            <p key={i} style={{ fontSize: 13, color: '#374151', lineHeight: 1.55, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid #E24B4A` }}>{issue}</p>
+                          )) : (
+                            <p style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>No issues identified</p>
+                          )}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#9CA3AF', marginBottom: 8 }}>Recommendations</p>
+                          {recommendations.length > 0 ? recommendations.map((rec, i) => (
+                            <p key={i} style={{ fontSize: 13, color: '#374151', lineHeight: 1.55, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid #639922` }}>{rec}</p>
+                          )) : (
+                            <p style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>No recommendations</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })}
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: '0.5rem' }}>
                   <button
                     onClick={reset}
                     style={{ height: 36, padding: '0 16px', borderRadius: 8, border: '0.5px solid #D1D5DB', background: '#fff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}
                   >
                     <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" />
-                    Review another
-                  </button>
-                  <button
-                    onClick={() => window.open('mailto:?subject=UX Review Report&body=' + encodeURIComponent(JSON.stringify(report, null, 2)))}
-                    style={{ height: 36, padding: '0 16px', borderRadius: 8, border: '0.5px solid #D1D5DB', background: '#fff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}
-                  >
-                    <i className="ti ti-mail" style={{ fontSize: 13 }} aria-hidden="true" />
-                    Share report
+                    Evaluate another
                   </button>
                   <button
                     onClick={() => {
                       const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
-                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ux-review-report.json'; a.click()
+                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'heuristic-evaluation-report.json'; a.click()
                     }}
                     style={{ height: 36, padding: '0 16px', borderRadius: 8, border: '0.5px solid #D1D5DB', background: '#fff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#374151' }}
                   >
                     <i className="ti ti-download" style={{ fontSize: 13 }} aria-hidden="true" />
-                    Export JSON
+                    Export report
                   </button>
                 </div>
               </>

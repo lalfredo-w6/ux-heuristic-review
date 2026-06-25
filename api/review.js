@@ -13,40 +13,91 @@ export default async function handler(req, res) {
     })
   }
 
-  const systemPrompt = `You are a senior UX and Design System reviewer for Mobichat / Mobitech, a SaaS product in the Indonesian market.
-Evaluate the provided design/prototype against usability heuristics and design system standards.
+  const systemPrompt = `You are a senior UX evaluator conducting a Heuristic Evaluation using Jakob Nielsen's 10 Usability Heuristics (Nielsen Norman Group methodology).
 
-Return ONLY a valid JSON object with this exact structure (no markdown, no backticks, no preamble):
+For each heuristic, identify specific places where the interface fails to adhere to the guideline. Write concrete recommendations for how to fix those usability issues.
+
+Return ONLY a valid JSON object (no markdown, no backticks, no preamble):
 {
-  "score": <number 0-100>,
-  "status": "<Pass|Pass with Revision|Needs Rework>",
-  "summary": "<2 sentence summary>",
+  "evaluator": "AI Heuristic Evaluator",
+  "date": "<today's date as YYYY-MM-DD>",
+  "product": "<product or screen name inferred from the design>",
+  "task": "<primary user task being evaluated>",
+  "summary": "<2 sentence overall evaluation summary>",
   "heuristics": [
-    {"name": "Clarity", "score": <1-5>, "note": "<short observation>"},
-    {"name": "Information Architecture", "score": <1-5>, "note": "<short observation>"},
-    {"name": "Efficiency", "score": <1-5>, "note": "<short observation>"},
-    {"name": "Consistency", "score": <1-5>, "note": "<short observation>"},
-    {"name": "Error Prevention", "score": <1-5>, "note": "<short observation>"},
-    {"name": "Accessibility", "score": <1-5>, "note": "<short observation>"}
-  ],
-  "designSystem": [
-    {"label": "Component usage", "status": "<pass|warn|fail>", "note": "<brief>"},
-    {"label": "Spacing", "status": "<pass|warn|fail>", "note": "<brief>"},
-    {"label": "Typography", "status": "<pass|warn|fail>", "note": "<brief>"},
-    {"label": "Color tokens", "status": "<pass|warn|fail>", "note": "<brief>"},
-    {"label": "States coverage", "status": "<pass|warn|fail>", "note": "<brief>"}
-  ],
-  "findings": [
-    {"title": "<issue>", "severity": "<Critical|Major|Minor>", "impact": "<impact>", "recommendation": "<fix>"}
-  ],
-  "quickWins": ["<win 1>", "<win 2>", "<win 3>"]
+    {
+      "number": 1,
+      "name": "Visibility of System Status",
+      "issues": ["<specific issue observed, or empty string if none>"],
+      "recommendations": ["<specific fix, or empty string if none>"]
+    },
+    {
+      "number": 2,
+      "name": "Match Between System and the Real World",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 3,
+      "name": "User Control and Freedom",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 4,
+      "name": "Consistency and Standards",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 5,
+      "name": "Error Prevention",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 6,
+      "name": "Recognition Rather Than Recall",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 7,
+      "name": "Flexibility and Efficiency of Use",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 8,
+      "name": "Aesthetic and Minimalist Design",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 9,
+      "name": "Help Users Recognize, Diagnose, and Recover from Errors",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    },
+    {
+      "number": 10,
+      "name": "Help and Documentation",
+      "issues": ["..."],
+      "recommendations": ["..."]
+    }
+  ]
 }
 
 Rules:
-- findings: exactly 3 items
-- Keep all notes under 20 words
-- Be specific, not generic
+- Include all 10 heuristics in order
+- Be specific to what you observe in the actual design — reference UI elements, labels, flows
+- Each heuristic: 0–2 issues and 0–2 matching recommendations
+- If no issue found for a heuristic, use issues: ["No significant issues identified"] and recommendations: ["Maintain current approach"]
+- Keep each issue and recommendation under 30 words
+- Do NOT include design system scores, severity ratings, or quick wins
 - Return compact valid JSON only`
+
+  const scopeLabel = scope === 'flow' ? 'entire flow' : scope === 'multi' ? 'multiple screens' : 'single screen'
 
   let userContent
 
@@ -62,11 +113,11 @@ Rules:
       },
       {
         type: 'text',
-        text: `Review this UI screen. Scope: ${scope || 'single screen'}. Evaluate thoroughly against all 6 heuristics. Be specific about what you observe in the actual design.`
+        text: `Conduct a heuristic evaluation of this UI screen. Scope: ${scopeLabel}. Evaluate against all 10 Nielsen heuristics. Be specific about what you observe.`
       }
     ]
   } else {
-    userContent = `Review this prototype URL: ${messages}. Scope: ${scope || 'single screen'}. Provide a thorough heuristic evaluation based on common SaaS patterns. Be specific and practical about likely issues.`
+    userContent = `Conduct a heuristic evaluation of this prototype: ${messages}. Scope: ${scopeLabel}. Evaluate against all 10 Nielsen heuristics based on what is visible or typical for this type of interface.`
   }
 
   try {
@@ -79,7 +130,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: [{ role: 'user', content: userContent }]
       })
@@ -99,6 +150,7 @@ Rules:
     if (!text) {
       return res.status(500).json({ error: 'Empty response from AI model' })
     }
+
     const clean = text.replace(/```json\n?|```/g, '').trim()
     let report
     try {
