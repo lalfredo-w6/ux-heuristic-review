@@ -43,18 +43,46 @@ export default function App() {
   const fileInputRef = useRef(null)
   const dragRef = useRef(null)
 
-  function handleFile(file) {
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const maxWidth = 1280
+        const scale = Math.min(1, maxWidth / img.width)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82)
+        resolve({
+          preview: dataUrl,
+          base64: dataUrl.split(',')[1],
+          mediaType: 'image/jpeg'
+        })
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error('Could not read image file'))
+      }
+      img.src = url
+    })
+  }
+
+  async function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return
-    setImageMediaType(file.type)
     setFileName(file.name)
-    const reader = new FileReader()
-    reader.onload = e => {
-      const dataUrl = e.target.result
-      setImagePreview(dataUrl)
-      setImageBase64(dataUrl.split(',')[1])
+    try {
+      const { preview, base64, mediaType } = await compressImage(file)
+      setImagePreview(preview)
+      setImageBase64(base64)
+      setImageMediaType(mediaType)
       setView('preview')
+    } catch (err) {
+      setError(err.message || 'Could not process image')
+      setView('report')
     }
-    reader.readAsDataURL(file)
   }
 
   function handleDrop(e) {
@@ -81,10 +109,15 @@ export default function App() {
         ? { imageBase64, imageMediaType, scope }
         : { messages: url, scope }
 
+      const payload = JSON.stringify(body)
+      if (payload.length > 4_000_000) {
+        throw new Error('Image is too large for upload. Try a smaller screenshot or paste a Figma URL instead.')
+      }
+
       const res = await fetch('/api/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: payload
       })
 
       clearInterval(interval)
