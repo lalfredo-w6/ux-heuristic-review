@@ -42,6 +42,8 @@ cp .env.example .env.local
 npm run dev
 ```
 
+The dev server runs the `/api/review` endpoint directly — no separate backend or `vercel dev` required. Open http://localhost:5173 and upload a screenshot or paste a Figma URL.
+
 ## Project structure
 ```
 ux-heuristic-review/

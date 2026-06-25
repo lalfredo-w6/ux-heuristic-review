@@ -5,6 +5,12 @@ export default async function handler(req, res) {
 
   const { messages, imageBase64, imageMediaType, scope } = req.body
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({
+      error: 'ANTHROPIC_API_KEY is not configured. Add it to .env.local for local dev, or to Vercel environment variables for production.'
+    })
+  }
+
   const systemPrompt = `You are a senior UX and Design System reviewer for Mobichat / Mobitech, a SaaS product in the Indonesian market.
 Evaluate the provided design/prototype against usability heuristics and design system standards.
 
@@ -82,7 +88,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: 4096,
         system: systemPrompt,
         messages: [{ role: 'user', content: userContent }]
       })
@@ -95,12 +101,19 @@ Rules:
     }
 
     const text = data.content.map(b => b.text || '').join('')
-    const clean = text.replace(/```json|```/g, '').trim()
-    const report = JSON.parse(clean)
+    const clean = text.replace(/```json\n?|```/g, '').trim()
+    let report
+    try {
+      report = JSON.parse(clean)
+    } catch {
+      const match = clean.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Model did not return valid JSON')
+      report = JSON.parse(match[0])
+    }
 
     return res.status(200).json(report)
   } catch (err) {
     console.error('Review API error:', err)
-    return res.status(500).json({ error: 'Failed to generate review' })
+    return res.status(500).json({ error: err.message || 'Failed to generate review' })
   }
 }

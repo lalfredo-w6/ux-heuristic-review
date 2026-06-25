@@ -90,8 +90,14 @@ export default function App() {
       clearInterval(interval)
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'API error')
+        let message = 'API error'
+        try {
+          const err = await res.json()
+          message = err.error || message
+        } catch {
+          message = `Server error (${res.status}). Check that ANTHROPIC_API_KEY is configured.`
+        }
+        throw new Error(message)
       }
 
       const data = await res.json()
@@ -99,7 +105,7 @@ export default function App() {
       setView('report')
     } catch (err) {
       clearInterval(interval)
-      setError(err.message)
+      setError(err.message || 'Could not reach the review API. Run `npm run dev` from the ux-heuristic-review folder.')
       setView('report')
     }
   }
