@@ -5,7 +5,9 @@ export default async function handler(req, res) {
 
   const { messages, imageBase64, imageMediaType, scope } = req.body
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
+
+  if (!apiKey) {
     return res.status(500).json({
       error: 'ANTHROPIC_API_KEY is not configured. Add it to .env.local for local dev, or to Vercel environment variables for production.'
     })
@@ -18,14 +20,14 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no backt
 {
   "score": <number 0-100>,
   "status": "<Pass|Pass with Revision|Needs Rework>",
-  "summary": "<2 sentence summary of overall quality>",
+  "summary": "<2 sentence summary>",
   "heuristics": [
-    {"name": "Clarity", "score": <1-5>, "note": "<specific observation>"},
-    {"name": "Information Architecture", "score": <1-5>, "note": "<specific observation>"},
-    {"name": "Efficiency", "score": <1-5>, "note": "<specific observation>"},
-    {"name": "Consistency", "score": <1-5>, "note": "<specific observation>"},
-    {"name": "Error Prevention", "score": <1-5>, "note": "<specific observation>"},
-    {"name": "Accessibility", "score": <1-5>, "note": "<specific observation>"}
+    {"name": "Clarity", "score": <1-5>, "note": "<short observation>"},
+    {"name": "Information Architecture", "score": <1-5>, "note": "<short observation>"},
+    {"name": "Efficiency", "score": <1-5>, "note": "<short observation>"},
+    {"name": "Consistency", "score": <1-5>, "note": "<short observation>"},
+    {"name": "Error Prevention", "score": <1-5>, "note": "<short observation>"},
+    {"name": "Accessibility", "score": <1-5>, "note": "<short observation>"}
   ],
   "designSystem": [
     {"label": "Component usage", "status": "<pass|warn|fail>", "note": "<brief>"},
@@ -35,27 +37,16 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no backt
     {"label": "States coverage", "status": "<pass|warn|fail>", "note": "<brief>"}
   ],
   "findings": [
-    {
-      "title": "<concise issue title>",
-      "severity": "<Critical|Major|Minor>",
-      "impact": "<user impact>",
-      "recommendation": "<specific, actionable fix>"
-    }
+    {"title": "<issue>", "severity": "<Critical|Major|Minor>", "impact": "<impact>", "recommendation": "<fix>"}
   ],
-  "quickWins": [
-    "<actionable quick win 1>",
-    "<actionable quick win 2>",
-    "<actionable quick win 3>"
-  ]
+  "quickWins": ["<win 1>", "<win 2>", "<win 3>"]
 }
 
 Rules:
-- findings: 3-5 items, mix of severities
-- Critical = blocks user task completion
-- Major = significantly degrades UX
-- Minor = polish / consistency issue
-- Be specific to what you observe, not generic
-- recommendations must be concrete and implementable`
+- findings: exactly 3 items
+- Keep all notes under 20 words
+- Be specific, not generic
+- Return compact valid JSON only`
 
   let userContent
 
@@ -83,7 +74,7 @@ Rules:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -97,10 +88,17 @@ Rules:
     const data = await response.json()
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'API error' })
+      return res.status(response.status).json({ error: data.error?.message || 'Anthropic API error' })
     }
 
-    const text = data.content.map(b => b.text || '').join('')
+    if (data.stop_reason === 'max_tokens') {
+      return res.status(500).json({ error: 'Review response was truncated. Please try again.' })
+    }
+
+    const text = data.content?.map(b => b.text || '').join('') || ''
+    if (!text) {
+      return res.status(500).json({ error: 'Empty response from AI model' })
+    }
     const clean = text.replace(/```json\n?|```/g, '').trim()
     let report
     try {
